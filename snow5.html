@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>万花板</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+<style>
+html,body{margin:0;padding:0;overflow:hidden;background:#000;
+          -webkit-user-select:none;user-select:none;
+          -webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;}
+#controls{position:fixed;bottom:20px;left:0;right:0;height:50px;
+          display:flex;align-items:center;justify-content:center;gap:20px;
+          transition:transform .3s;transform:translateY(0);pointer-events:none;}
+#controls.hidden{transform:translateY(100%);}
+#controls>*{pointer-events:auto;}
+.control-group{display:flex;flex-direction:column;align-items:center;font-size:10px;color:rgba(255,255,255,.7);}
+input[type=range]{width:80px;height:3px;-webkit-appearance:none;background:rgba(255,255,255,.3);border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;background:rgba(255,255,255,.8);border-radius:50%;}
+button{padding:6px 12px;font-size:12px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);border-radius:15px;}
+</style>
+</head>
+<body>
+<div id="controls">
+  <div class="control-group"><span>背景</span><input id="bgSlider" type="range" min="0" max="255" value="0" step="1"></div>
+  <div class="control-group"><span>粗细</span><input id="brushSlider" type="range" min="1" max="32" value="4" step=".1"></div>
+  <button id="resetBtn">清空</button>
+</div>
+<script>
+/* ---------- 全局变量 ---------- */
+let symm = 6, ang = 360/symm, xoff = 0, bgC = 0;
+let controls   = document.getElementById('controls');
+let bgSlider   = document.getElementById('bgSlider');
+let brushSlider= document.getElementById('brushSlider');
+let resetBtn   = document.getElementById('resetBtn');
+let isDrawing  = false;
+let prev = {x:0,y:0};
+let cvs;        // p5 canvas 元素
+
+/* ---------- p5 ---------- */
+function setup(){
+  cvs = createCanvas(windowWidth,windowHeight);
+  angleMode(DEGREES);colorMode(HSB,255);
+  bgC = +bgSlider.value;
+  background(bgC);
+
+  /* 控制面板事件 */
+  resetBtn.onclick = ()=>{background(bgC);};
+  bgSlider.oninput = ()=>{bgC = +bgSlider.value;};
+
+  /* 关键：让画布本身拦截所有触摸/鼠标 */
+  cvs.elt.style.touchAction = 'none';
+  cvs.elt.addEventListener('touchstart',onStart,{passive:false});
+  cvs.elt.addEventListener('touchmove' ,onMove ,{passive:false});
+  cvs.elt.addEventListener('touchend'  ,onEnd  ,{passive:false});
+  cvs.elt.addEventListener('mousedown' ,onStart,false);
+  cvs.elt.addEventListener('mousemove' ,onMove ,false);
+  cvs.elt.addEventListener('mouseup'   ,onEnd  ,false);
+
+  /* 整个页面禁止橡皮筋 */
+  document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+}
+
+/* ---------- 绘画逻辑 ---------- */
+function draw(){
+  translate(width/2,height/2);
+  if(!isDrawing) return;
+
+  let mx = prev.x - width/2;
+  let my = prev.y - height/2;
+  let pmx = (prev.x - movedX) - width/2 || mx;
+  let pmy = (prev.y - movedY) - height/2 || my;
+
+  let hu = noise(xoff)*255; xoff+=.01;
+  stroke(hu,255,255,100);
+
+  let d = dist(mx,my,pmx,pmy);
+  let sw = map(d,0,+brushSlider.value,+brushSlider.value,1);
+  strokeWeight(sw);
+
+  for(let i=0;i<symm;i++){
+    rotate(ang);
+    line(mx,my,pmx,pmy);
+    push();scale(-1,1);line(mx,my,pmx,pmy);pop();
+  }
+}
+
+/* ---------- 事件处理 ---------- */
+function onStart(e){
+  if(e.type==='touchstart' && e.target.closest('#controls')) return;
+  isDrawing = true;
+  const pt = e.type.startsWith('touch') ? e.touches[0] : e;
+  prev.x = pt.clientX;
+  prev.y = pt.clientY;
+  controls.classList.add('hidden');
+  e.preventDefault();
+}
+function onMove(e){
+  if(!isDrawing) return;
+  const pt = e.type.startsWith('touch') ? e.touches[0] : e;
+  prev.x = pt.clientX;
+  prev.y = pt.clientY;
+  e.preventDefault();
+}
+function onEnd(e){
+  isDrawing = false;
+  controls.classList.remove('hidden');
+  e.preventDefault();
+}
+function windowResized(){
+  resizeCanvas(windowWidth,windowHeight);
+  background(bgC);
+}
+</script>
+</body>
+</html>
