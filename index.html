@@ -26,6 +26,13 @@
             width: auto;
             min-width: 60px;
             text-align: center;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
         }
         
         #settings-toggle:hover {
@@ -46,6 +53,12 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             max-height: calc(100vh - 100px);
             overflow-y: auto;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         #settings-panel.hidden {
@@ -115,6 +128,13 @@
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.2s;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
         }
         
         button:hover {
@@ -285,6 +305,9 @@
             
             // 控制面板事件
             settingsToggle.addEventListener('click', toggleSettings);
+            settingsToggle.addEventListener('touchstart', function(e) {
+                e.stopPropagation();
+            }, {passive: false});
             
             // 旋转控制事件
             rotationToggle.addEventListener('click', toggleRotation);
@@ -439,7 +462,10 @@
 
         // 画布外统一监听，保证 iOS 也能收到
         document.addEventListener('touchstart',e=>{
-            if(e.target.closest('#settings-panel') || e.target.closest('#settings-toggle')) return;
+            if(e.target.closest('#settings-panel') || e.target.closest('#settings-toggle')) {
+                e.stopPropagation();
+                return;
+            }
             const t = e.touches[0];
             startDraw(t.clientX, t.clientY);
             e.preventDefault();
@@ -447,12 +473,20 @@
 
         document.addEventListener('touchmove',e=>{
             if(!isDrawing) return;
+            if(e.target.closest('#settings-panel') || e.target.closest('#settings-toggle')) {
+                e.stopPropagation();
+                return;
+            }
             const t = e.touches[0];
             prev.x = t.clientX; prev.y = t.clientY;
             e.preventDefault();
         },{passive:false});
 
         document.addEventListener('touchend',e=>{
+            if(e.target.closest('#settings-panel') || e.target.closest('#settings-toggle')) {
+                e.stopPropagation();
+                return;
+            }
             endDraw();
             e.preventDefault();
         },{passive:false});
@@ -463,9 +497,13 @@
             startDraw(e.clientX,e.clientY);
         });
         document.addEventListener('mousemove',e=>{
+            if(e.target.closest('#settings-panel') || e.target.closest('#settings-toggle')) return;
             if(isDrawing){prev.x=e.clientX;prev.y=e.clientY;}
         });
-        document.addEventListener('mouseup',endDraw);
+        document.addEventListener('mouseup',e=>{
+            if(e.target.closest('#settings-panel') || e.target.closest('#settings-toggle')) return;
+            endDraw();
+        });
         
         // 控制面板切换函数
         function toggleSettings() {
